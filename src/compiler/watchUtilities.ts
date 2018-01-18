@@ -255,7 +255,7 @@ namespace ts {
      * Updates the existing missing file watches with the new set of missing files after new program is created
      */
     export function updateMissingFilePathsWatch(
-        program: Program,
+        program: WatchProgram,
         missingFileWatches: Map<FileWatcher>,
         createMissingFileWatch: (missingFilePath: Path) => FileWatcher,
     ) {
@@ -321,14 +321,6 @@ namespace ts {
             existingWatcher.watcher.close();
             existingWatchedForWildcards.set(directory, createWildcardDirectoryWatcher(directory, flags));
         }
-    }
-
-    export function isEmittedFileOfProgram(program: Program | undefined, file: string) {
-        if (!program) {
-            return false;
-        }
-
-        return program.isEmittedFile(file);
     }
 
     export interface WatchFileHost {

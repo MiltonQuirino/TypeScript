@@ -40,6 +40,11 @@ namespace ts {
     interface ResolvedTypeReferenceDirectiveWithFailedLookupLocations extends ts.ResolvedTypeReferenceDirectiveWithFailedLookupLocations, ResolutionWithFailedLookupLocations {
     }
 
+    export interface ProgramWithIsEmittedFile {
+        /** Is the file emitted file */
+        /* @internal */ isEmittedFile(file: string): boolean;
+    }
+
     export interface ResolutionCacheHost extends ModuleResolutionHost {
         toPath(fileName: string): Path;
         getCompilationSettings(): CompilerOptions;
@@ -52,7 +57,7 @@ namespace ts {
         getGlobalCache?(): string | undefined;
         writeLog(s: string): void;
         maxNumberOfFilesToIterateForInvalidation?: number;
-        getCurrentProgram(): Program;
+        getCurrentProgram(): ProgramWithIsEmittedFile;
     }
 
     interface DirectoryWatchesOfFailedLookup {
@@ -475,7 +480,8 @@ namespace ts {
                 }
 
                 // Ignore emits from the program
-                if (isEmittedFileOfProgram(resolutionHost.getCurrentProgram(), fileOrDirectory)) {
+                const program = resolutionHost.getCurrentProgram();
+                if (program && program.isEmittedFile(fileOrDirectory)) {
                     return;
                 }
 

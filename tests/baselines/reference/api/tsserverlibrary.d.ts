@@ -3880,6 +3880,20 @@ declare namespace ts {
     function formatDiagnosticsWithColorAndContext(diagnostics: ReadonlyArray<Diagnostic>, host: FormatDiagnosticsHost): string;
     function flattenDiagnosticMessageText(messageText: string | DiagnosticMessageChain, newLine: string): string;
     /**
+     * Program need to be created to support watch functionality
+     */
+    interface WatchProgram {
+        /**
+         * Get a list of root file names that were passed to a 'createProgram'
+         */
+        getRootFileNames(): ReadonlyArray<string>;
+        /**
+         * Get a list of files in the program
+         */
+        getSourceFiles(): ReadonlyArray<SourceFile>;
+        getCompilerOptions(): CompilerOptions;
+    }
+    /**
      * Create a new 'Program' instance. A Program is an immutable collection of 'SourceFile's and a 'CompilerOptions'
      * that represent a compilation unit.
      *

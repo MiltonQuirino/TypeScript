@@ -3827,6 +3827,20 @@ declare namespace ts {
     function formatDiagnosticsWithColorAndContext(diagnostics: ReadonlyArray<Diagnostic>, host: FormatDiagnosticsHost): string;
     function flattenDiagnosticMessageText(messageText: string | DiagnosticMessageChain, newLine: string): string;
     /**
+     * Program need to be created to support watch functionality
+     */
+    interface WatchProgram {
+        /**
+         * Get a list of root file names that were passed to a 'createProgram'
+         */
+        getRootFileNames(): ReadonlyArray<string>;
+        /**
+         * Get a list of files in the program
+         */
+        getSourceFiles(): ReadonlyArray<SourceFile>;
+        getCompilerOptions(): CompilerOptions;
+    }
+    /**
      * Create a new 'Program' instance. A Program is an immutable collection of 'SourceFile's and a 'CompilerOptions'
      * that represent a compilation unit.
      *
@@ -3881,13 +3895,15 @@ declare namespace ts {
          */
         getProgram(): Program;
         /**
-         * Get compiler options of the program
+         * Get a list of root file names that were passed to a 'createProgram'
          */
+        getRootFileNames(): ReadonlyArray<string>;
         getCompilerOptions(): CompilerOptions;
         /**
          * Get the source file in the program with file name
          */
         getSourceFile(fileName: string): SourceFile | undefined;
+        getSourceFileByPath(path: Path): SourceFile | undefined;
         /**
          * Get a list of files in the program
          */
@@ -3969,11 +3985,12 @@ declare namespace ts {
 declare namespace ts {
     type DiagnosticReporter = (diagnostic: Diagnostic) => void;
     type WatchStatusReporter = (diagnostic: Diagnostic, newLine: string) => void;
-    interface WatchCompilerHost {
-        /** If provided, callback to invoke before each program creation */
-        beforeProgramCreate?(compilerOptions: CompilerOptions): void;
-        /** If provided, callback to invoke after every new program creation */
-        afterProgramCreate?(program: Program): void;
+    type CreateProgram<T extends WatchProgram> = (rootNames: ReadonlyArray<string>, options: CompilerOptions, host: CompilerHost, oldProgram?: T) => T;
+    interface WatchCompilerHost<T extends WatchProgram> {
+        /**
+         * Used to create the program when need for program creation or recreation detected
+         */
+        createProgram: CreateProgram<T>;
         /** If provided, called with Diagnostic message that informs about change in watch status */
         onWatchStatusChange?(diagnostic: Diagnostic, newLine: string): void;
         useCaseSensitiveFileNames(): boolean;
@@ -4019,7 +4036,7 @@ declare namespace ts {
     /**
      * Host to create watch with root files and options
      */
-    interface WatchCompilerHostOfFilesAndCompilerOptions extends WatchCompilerHost {
+    interface WatchCompilerHostOfFilesAndCompilerOptions<T extends WatchProgram> extends WatchCompilerHost<T> {
         /** root files to use to generate program */
         rootFiles: string[];
         /** Compiler options */
@@ -4041,7 +4058,7 @@ declare namespace ts {
     /**
      * Host to create watch with config file
      */
-    interface WatchCompilerHostOfConfigFile extends WatchCompilerHost, ConfigFileDiagnosticsReporter {
+    interface WatchCompilerHostOfConfigFile<T extends WatchProgram> extends WatchCompilerHost<T>, ConfigFileDiagnosticsReporter {
         /** Name of the config file to compile */
         configFileName: string;
         /** Options to extend */
@@ -4071,24 +4088,16 @@ declare namespace ts {
     /**
      * Create the watch compiler host for either configFile or fileNames and its options
      */
-    function createWatchCompilerHost(rootFiles: string[], options: CompilerOptions, system: System, reportDiagnostic?: DiagnosticReporter, reportWatchStatus?: WatchStatusReporter): WatchCompilerHostOfFilesAndCompilerOptions;
-    function createWatchCompilerHost(configFileName: string, optionsToExtend: CompilerOptions | undefined, system: System, reportDiagnostic?: DiagnosticReporter, reportWatchStatus?: WatchStatusReporter): WatchCompilerHostOfConfigFile;
+    function createWatchCompilerHost<T extends WatchProgram = EmitAndSemanticDiagnosticsBuilderProgram>(rootFiles: string[], options: CompilerOptions, system?: System, createProgram?: CreateProgram<T>, reportDiagnostic?: DiagnosticReporter, reportWatchStatus?: WatchStatusReporter): WatchCompilerHostOfFilesAndCompilerOptions<T>;
+    function createWatchCompilerHost<T extends WatchProgram = EmitAndSemanticDiagnosticsBuilderProgram>(configFileName: string, optionsToExtend: CompilerOptions | undefined, system?: System, createProgram?: CreateProgram<T>, reportDiagnostic?: DiagnosticReporter, reportWatchStatus?: WatchStatusReporter): WatchCompilerHostOfConfigFile<T>;
     /**
      * Creates the watch from the host for root files and compiler options
      */
-    function createWatchProgram(host: WatchCompilerHostOfFilesAndCompilerOptions): WatchOfFilesAndCompilerOptions<Program>;
+    function createWatchProgram<T extends WatchProgram>(host: WatchCompilerHostOfFilesAndCompilerOptions<T>): WatchOfFilesAndCompilerOptions<T>;
     /**
      * Creates the watch from the host for config file
      */
-    function createWatchProgram(host: WatchCompilerHostOfConfigFile): WatchOfConfigFile<Program>;
-    /**
-     * Creates the watch from the host for root files and compiler options
-     */
-    function createWatchBuilderProgram<T extends BuilderProgram>(host: WatchCompilerHostOfFilesAndCompilerOptions & BuilderProgramHost, createBuilderProgram: (newProgram: Program, host: BuilderProgramHost, oldProgram?: T) => T): WatchOfFilesAndCompilerOptions<T>;
-    /**
-     * Creates the watch from the host for config file
-     */
-    function createWatchBuilderProgram<T extends BuilderProgram>(host: WatchCompilerHostOfConfigFile & BuilderProgramHost, createBuilderProgram: (newProgram: Program, host: BuilderProgramHost, oldProgram?: T) => T): WatchOfConfigFile<T>;
+    function createWatchProgram<T extends WatchProgram>(host: WatchCompilerHostOfConfigFile<T>): WatchOfConfigFile<T>;
 }
 declare namespace ts {
     function parseCommandLine(commandLine: ReadonlyArray<string>, readFile?: (path: string) => string | undefined): ParsedCommandLine;

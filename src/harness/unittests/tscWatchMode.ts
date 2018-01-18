@@ -26,12 +26,12 @@ namespace ts.tscWatch {
         const compilerHost = ts.createWatchCompilerHostOfConfigFile(configFileName, {}, host);
         compilerHost.maxNumberOfFilesToIterateForInvalidation = maxNumberOfFilesToIterateForInvalidation;
         const watch = ts.createWatchProgram(compilerHost);
-        return () => watch.getCurrentProgram();
+        return () => watch.getCurrentProgram().getProgram();
     }
 
     function createWatchOfFilesAndCompilerOptions(rootFiles: string[], host: WatchedSystem, options: CompilerOptions = {}) {
         const watch = ts.createWatchProgram(createWatchCompilerHostOfFilesAndCompilerOptions(rootFiles, options, host));
-        return () => watch.getCurrentProgram();
+        return () => watch.getCurrentProgram().getProgram();
     }
 
     function getEmittedLineForMultiFileOutput(file: FileOrFolder, host: WatchedSystem) {

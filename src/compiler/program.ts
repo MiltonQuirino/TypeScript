@@ -404,11 +404,36 @@ namespace ts {
     }
 
     /**
+     * Program need to be created to support watch functionality
+     */
+    export interface WatchProgram {
+        /**
+         * Get a list of root file names that were passed to a 'createProgram'
+         */
+        getRootFileNames(): ReadonlyArray<string>;
+
+        /**
+         * Get a list of files in the program
+         */
+        getSourceFiles(): ReadonlyArray<SourceFile>;
+
+        /**
+         * Get a list of file names that were passed to 'createProgram' or referenced in a
+         * program source file but could not be located.
+         */
+        /* @internal */
+        getMissingFilePaths(): ReadonlyArray<Path>;
+        getCompilerOptions(): CompilerOptions;
+        /** Is the file emitted file */
+        /* @internal */ isEmittedFile(file: string): boolean;
+    }
+
+    /**
      * Determines if program structure is upto date or needs to be recreated
      */
     /* @internal */
     export function isProgramUptoDate(
-        program: Program | undefined,
+        program: WatchProgram | undefined,
         rootFileNames: string[],
         newOptions: CompilerOptions,
         getSourceVersion: (path: Path) => string,

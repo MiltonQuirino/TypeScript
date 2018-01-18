@@ -149,12 +149,13 @@ namespace ts {
         return sys.exit(exitStatus);
     }
 
-    function updateWatchCompilationHost(watchCompilerHost: WatchCompilerHost) {
-        const compileUsingBuilder = watchCompilerHost.afterProgramCreate;
-        watchCompilerHost.beforeProgramCreate = enableStatistics;
-        watchCompilerHost.afterProgramCreate = program => {
-            compileUsingBuilder(program);
-            reportStatistics(program);
+    function updateWatchCompilationHost(watchCompilerHost: WatchCompilerHost<EmitAndSemanticDiagnosticsBuilderProgram>) {
+        const compileUsingBuilder = watchCompilerHost.createProgram;
+        watchCompilerHost.createProgram = (rootNames, options, host, oldProgram) => {
+            enableStatistics(options);
+            const builderProgram = compileUsingBuilder(rootNames, options, host, oldProgram);
+            reportStatistics(builderProgram.getProgram());
+            return builderProgram;
         };
     }
 
@@ -163,7 +164,7 @@ namespace ts {
     }
 
     function createWatchOfConfigFile(configParseResult: ParsedCommandLine, optionsToExtend: CompilerOptions) {
-        const watchCompilerHost = ts.createWatchCompilerHostOfConfigFile(configParseResult.options.configFilePath, optionsToExtend, sys, reportDiagnostic, createWatchStatusReporter(configParseResult.options));
+        const watchCompilerHost = ts.createWatchCompilerHostOfConfigFile(configParseResult.options.configFilePath, optionsToExtend, sys, /*createProgram*/ undefined, reportDiagnostic, createWatchStatusReporter(configParseResult.options));
         updateWatchCompilationHost(watchCompilerHost);
         watchCompilerHost.rootFiles = configParseResult.fileNames;
         watchCompilerHost.options = configParseResult.options;
@@ -173,7 +174,7 @@ namespace ts {
     }
 
     function createWatchOfFilesAndCompilerOptions(rootFiles: string[], options: CompilerOptions) {
-        const watchCompilerHost = ts.createWatchCompilerHostOfFilesAndCompilerOptions(rootFiles, options, sys, reportDiagnostic, createWatchStatusReporter(options));
+        const watchCompilerHost = ts.createWatchCompilerHostOfFilesAndCompilerOptions(rootFiles, options, sys, /*createProgram*/ undefined, reportDiagnostic, createWatchStatusReporter(options));
         updateWatchCompilationHost(watchCompilerHost);
         createWatchProgram(watchCompilerHost);
     }

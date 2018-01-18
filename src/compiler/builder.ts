@@ -249,8 +249,10 @@ namespace ts {
         const result: BuilderProgram = {
             getState: () => state,
             getProgram: () => state.program,
+            getRootFileNames: () => state.program.getRootFileNames(),
             getCompilerOptions: () => state.program.getCompilerOptions(),
             getSourceFile: fileName => state.program.getSourceFile(fileName),
+            getSourceFileByPath: path => state.program.getSourceFileByPath(path),
             getSourceFiles: () => state.program.getSourceFiles(),
             getOptionsDiagnostics: cancellationToken => state.program.getOptionsDiagnostics(cancellationToken),
             getGlobalDiagnostics: cancellationToken => state.program.getGlobalDiagnostics(cancellationToken),
@@ -258,7 +260,9 @@ namespace ts {
             getSemanticDiagnostics,
             emit,
             getAllDependencies: sourceFile => BuilderState.getAllDependencies(state, state.program, sourceFile),
-            getCurrentDirectory: () => state.program.getCurrentDirectory()
+            getCurrentDirectory: () => state.program.getCurrentDirectory(),
+            getMissingFilePaths: () => state.program.getMissingFilePaths(),
+            isEmittedFile: file => state.program.isEmittedFile(file),
         };
 
         if (kind === BuilderProgramKind.SemanticDiagnosticsBuilderProgram) {
@@ -437,6 +441,10 @@ namespace ts {
          */
         getProgram(): Program;
         /**
+         * Get a list of root file names that were passed to a 'createProgram'
+         */
+        getRootFileNames(): ReadonlyArray<string>;
+        /*
          * Get compiler options of the program
          */
         getCompilerOptions(): CompilerOptions;
@@ -444,10 +452,19 @@ namespace ts {
          * Get the source file in the program with file name
          */
         getSourceFile(fileName: string): SourceFile | undefined;
+        getSourceFileByPath(path: Path): SourceFile | undefined;
         /**
          * Get a list of files in the program
          */
         getSourceFiles(): ReadonlyArray<SourceFile>;
+        /**
+         * Get a list of file names that were passed to 'createProgram' or referenced in a
+         * program source file but could not be located.
+         */
+        /* @internal */
+        getMissingFilePaths(): ReadonlyArray<Path>;
+        /** Is the file emitted file */
+        /* @internal */ isEmittedFile(file: string): boolean;
         /**
          * Get the diagnostics for compiler options
          */
